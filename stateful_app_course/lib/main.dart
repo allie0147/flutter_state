@@ -41,3 +41,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+/// how setState(fn) works?
+///
+/// `final Object? result = fn() as dynamic;`
+/// - `setState()` calls my function as [dynamic].
+/// - function cannot be [Future].
+///
+/// `_element!.markNeedsBuild();`
+/// - [StatefulElement] needs to be rebuild.
+///
