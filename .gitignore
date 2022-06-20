@@ -129,3 +129,4 @@ Temporary Items
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,flutter,dart
 .vscode/launch.json
+.idea
