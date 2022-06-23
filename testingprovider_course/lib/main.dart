@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +20,7 @@ void main() {
         debugShowCheckedModeBanner: false,
         home: const HomePage(),
         routes: {
-          '/new': (context) => const Material(),
+          '/new': (context) => const NewBreadCrumbWidget(),
         },
       ),
     ),
@@ -57,7 +58,7 @@ class BreadCrumbProvider extends ChangeNotifier {
   final List<BreadCrumb> _items = [];
 
   /// read-only
-  UnmodifiableListView<BreadCrumb> get item =>
+  UnmodifiableListView<BreadCrumb> get items =>
       UnmodifiableListView(_items);
 
   void add(BreadCrumb breadCrumb) {
@@ -74,9 +75,15 @@ class BreadCrumbProvider extends ChangeNotifier {
   }
 }
 
+typedef OnBreadCrumbTapped = void Function(BreadCrumb);
+
 class BreadCrumbsWidget extends StatelessWidget {
+  final OnBreadCrumbTapped onBreadCrumbTapped;
   final UnmodifiableListView<BreadCrumb> breadCrumbs;
-  const BreadCrumbsWidget({Key? key, required this.breadCrumbs})
+  const BreadCrumbsWidget(
+      {Key? key,
+      required this.breadCrumbs,
+      required this.onBreadCrumbTapped})
       : super(key: key);
 
   @override
@@ -84,11 +91,17 @@ class BreadCrumbsWidget extends StatelessWidget {
     return Wrap(
       children: breadCrumbs.map(
         (breadCrumb) {
-          return Text(
-            breadCrumb.title,
-            style: TextStyle(
-                color:
-                    breadCrumb.isActive ? Colors.blue : Colors.black),
+          return GestureDetector(
+            onTap: () {
+              onBreadCrumbTapped(breadCrumb);
+            },
+            child: Text(
+              breadCrumb.title,
+              style: TextStyle(
+                  color: breadCrumb.isActive
+                      ? Colors.blue
+                      : Colors.black),
+            ),
           );
         },
       ).toList(),
@@ -108,6 +121,16 @@ class HomePage extends StatelessWidget {
       ),
       body: Column(
         children: [
+          Consumer<BreadCrumbProvider>(
+            builder: (context, provider, child) {
+              return BreadCrumbsWidget(
+                breadCrumbs: provider.items,
+                onBreadCrumbTapped: (breadCrumb) {
+                  dev.log('bread crumb on tapped');
+                },
+              );
+            },
+          ),
           TextButton(
             onPressed: () => {
               Navigator.of(context).pushNamed(
@@ -123,6 +146,63 @@ class HomePage extends StatelessWidget {
               provider.reset();
             },
             child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NewBreadCrumbWidget extends StatefulWidget {
+  const NewBreadCrumbWidget({Key? key}) : super(key: key);
+
+  @override
+  State<NewBreadCrumbWidget> createState() =>
+      _NewBreadCrumbWidgetState();
+}
+
+class _NewBreadCrumbWidgetState extends State<NewBreadCrumbWidget> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    _controller = TextEditingController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add new bread crumb'),
+      ),
+      body: Column(
+        children: [
+          TextField(
+            controller: _controller,
+            decoration: const InputDecoration(
+              hintText: 'Enter a new bread crumb here...',
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final text = _controller.text;
+              if (text.isNotEmpty) {
+                final breadCrumb = BreadCrumb(
+                  isActive: false,
+                  name: text,
+                );
+                context.read<BreadCrumbProvider>().add(breadCrumb);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Add'),
           ),
         ],
       ),
