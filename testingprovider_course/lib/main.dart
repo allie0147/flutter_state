@@ -101,6 +101,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // final selectedValue = context.select<ValueClass, ValueType>((ValueClass value) => value.specificValue) : select() 사용 시점
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Page'),
@@ -109,12 +110,18 @@ class HomePage extends StatelessWidget {
         children: [
           TextButton(
             onPressed: () => {
-              Navigator.of(context).pushNamed('/new'),
+              Navigator.of(context).pushNamed(
+                '/new',
+              ),
             },
             child: const Text('Add new bread crumb'),
           ),
           TextButton(
-            onPressed: () => {},
+            onPressed: () {
+              // get provider
+              final provider = context.read<BreadCrumbProvider>();
+              provider.reset();
+            },
             child: const Text('Reset'),
           ),
         ],
@@ -122,3 +129,57 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
+/// [Provider]
+///
+/// 1. `select()`
+/// - 지정한 aspect of Provider 가져와 aspect가 변할때 재빌드 되도록 함.
+/// - build method 안에서만 쓰여야 함. (callback event 안에서는 쓰면 안된다고 함.)
+/// - Provider가 update event를 방출할때, ** 모든 'selector'를 동기적으로 부름. **
+/// - 만약, 이전값과 새로운값이 다르다면 (update가 되었다면) rebuild하도록 mark함.
+/// - used to watch a specific aspect of a [Provider]
+/// - marks a specific Widget as needing to be rebuilt
+/// - ** must be used only inside the `build` method of a Widget. **
+///
+/// - When a provider emits an update, it will call synchronously all `selector`.
+/// - Then, if they return a value different from the previously returned value,
+///   the dependent will be marked as needing to rebuild.
+///
+/// - behave like InheritedModel
+/// - '=='
+///
+/// 2. `read()`
+/// - same as `Provider.of<T>(this, listen: false);`
+/// - get snapshot of provider
+/// - Not make widget rebuild when the value changes
+/// - Cannot be called inside [StatelessWidget]/[State.build()].
+/// - freely called _outside_ of these methods.
+/// - **DON'T** call [read] inside build if the value is used only for events.: anti-pattern
+/// - **DON'T** use [read] for creating widgets with a value that never changes.
+/// - This method can be freely passed to objects, so that they can read providers
+/// - without having a reference on a [BuildContext]. : use [Locator] which is a typedef to make it easier to pass [read] to objects.
+///
+/// 3. `watch()`
+/// - build method 안에서만 쓰여야 함. (callback event 안에서는 쓰면 안된다고 함.) => use [read]
+/// - same as `Provider.of<T>(this);`
+/// - marks the widget as needing to be rebuilt if the [Provider] changes.
+/// - allows `optional` [Provider]
+/// - accessible only inside [StatelessWidget.build()]/[State.build()].
+/// - If you need to use it outside of these methods, consider using [Provider.of()].
+/// - similar to [read] but
+///
+/// 4. `Provider.of<T>`
+/// - use it outside of `build()`
+///
+/// 5. `Consumer`
+/// - 하나의 `build()`에서 Provider를 생성하고, 소비해야 하는 상황에서 사용.
+/// - type of [Provider], has a `build()`
+/// - It just calls [Provider.of] in a new widget, and delegates its `build` implementation to [builder].
+/// - has a child [Widget] that ** doesn't get rebuilt when the [Provider] changes. **
+/// - [builder] must not be null and may be called multiple times (such as when the provided value change).
+///
+/// ** two main purpose **
+/// 1. It allows obtaining a value from a provider when we don't have a
+///   [BuildContext] that is a descendant of said provider, and therefore
+///   cannot use [Provider.of]. => BuildContext에 Provider가 만들어지지 않았을 경우(error [ProviderNotFoundException]이 발생)에 사용:
+/// 2. It helps with performance optimization by providing more granular rebuilds. => Rebuild specific Widget, not All Widgets
